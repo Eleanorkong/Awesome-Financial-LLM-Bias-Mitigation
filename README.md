@@ -1,1 +1,1 @@
-# Awesome-Financial-LLM-Application
+# Awesome-Financial-LLM-Bias-Mitigation
