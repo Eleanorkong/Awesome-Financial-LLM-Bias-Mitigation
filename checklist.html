@@ -167,7 +167,7 @@
             transition: opacity 0.2s, transform 0.1s;
         }
         .sin-tag:hover { opacity: 0.85; transform: translateY(-1px); }
-        .sin-tag::after { content: "\u2139\uFE0F"; margin-left: 4px; font-size: 10px; opacity: 0.6; }
+        .sin-tag::after { content: "\2139\FE0F"; margin-left: 4px; font-size: 10px; opacity: 0.6; }
         .sin-lookahead { background-color: #fee2e2; color: #991b1b; }
         .sin-survivorship { background-color: #ffedd5; color: #9a3412; }
         .sin-narrative { background-color: #fef3c7; color: #92400e; }
@@ -543,6 +543,126 @@
                                 <option value="">Select Status...</option>
                                 <option value="pass">Pass</option>
                                 <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4. Epistemic Calibration -->
+    <div class="pillar-section">
+        <div class="pillar-header">
+            <span>4. Epistemic Calibration</span>
+            <span class="subtitle" style="font-size: 10pt; font-weight: normal; margin: 0;">Uncertainty & Abstention</span>
+        </div>
+        <table>
+            <tbody>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Explicit Abstention Option</span>
+                        <div class="sub-text">Does the action space include "No Trade" or "Do Not Know", and is it scored as a legitimate outcome?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-objective" onclick="showSin(4, 'guess')">Sin #4: Objective Bias</span>
+                        <div class="sub-text">Prevents the model from being forced to hallucinate or guess to satisfy a "helpful assistant" objective.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Calibrated Confidence/Distribution</span>
+                        <div class="sub-text">Does the system output a predictive distribution or a structured uncertainty estimate?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-objective" onclick="showSin(4, 'conf')">Sin #4: Objective Bias</span>
+                        <div class="sub-text">Financial decisions require calibrated probability, not just fluent text (verbalized overconfidence).</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 5. Realistic Implementation Constraints -->
+    <div class="pillar-section">
+        <div class="pillar-header">
+            <span>5. Realistic Implementation</span>
+            <span class="subtitle" style="font-size: 10pt; font-weight: normal; margin: 0;">Cost & Latency</span>
+        </div>
+        <table>
+            <tbody>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Latency-Aware Execution</span>
+                        <div class="sub-text">Are trades executed at the price available AFTER generation is complete (accounting for slippage), not the price at the start?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-cost" onclick="showSin(5, 'latency')">Sin #5: Cost Bias (Latency)</span>
+                        <div class="sub-text">Zero-latency assumptions overestimate returns for time-sensitive strategies given the slow inference of LLMs.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Net Utility Reporting</span>
+                        <div class="sub-text">Are metrics reported strictly after deducting transaction costs and operational inference costs?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-cost" onclick="showSin(5, 'money')">Sin #5: Cost Bias (Monetary)</span>
+                        <div class="sub-text">Prevents complex, expensive pipelines from appearing superior to simple baselines when they are economically unviable.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 | Methodological rigor is not optional in financial science. | <a href="https://arxiv.org/abs/2602.14233" style="color: #64748b;">arXiv:260            <option value="fail">Fail</option>
                                 <option value="na">N/A</option>
                             </select>
                             <textarea class="comment-input" placeholder="Notes..."></textarea>
