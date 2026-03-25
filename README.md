@@ -95,7 +95,7 @@ The framework enforces minimum requirements for a result to be considered **"dep
 
 We provide a web-based implementation of the Structural Validity Framework. This tool allows authors and reviewers to audit financial LLM systems against the criteria defined in our paper.
 
-### 👉 [Open the Checklist →](./checklist.html)
+### 👉 [Open the Checklist →](https://eleanorkong.github.io/Awesome-Financial-LLM-Bias-Mitigation/checklist.html)
 
 **How to use:**
 
