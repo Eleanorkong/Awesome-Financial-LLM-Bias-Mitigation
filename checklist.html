@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial LLM Structural Validity Checklist</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #334155;
+            --accent: #2563eb;
+            --danger: #dc2626;
+            --success: #16a34a;
+            --warning-bg: #eff6ff;
+            --warning-border: #bfdbfe;
+            --warning-text: #1e40af;
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --border: #cbd5e1;
+            --input-bg: #f8fafc;
+            --modal-overlay: rgba(15, 23, 42, 0.6);
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--primary);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+        }
+        h1 {
+            color: var(--primary);
+            font-size: 24px;
+            margin: 5px 0;
+            font-weight: 800;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: var(--secondary);
+        }
+        .controls-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 0 5px;
+        }
+        .score-card {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
+            background: #f1f5f9;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .score-value {
+            color: var(--accent);
+            font-size: 15px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .download-btn { background-color: var(--accent); color: white; }
+        .download-btn:hover { background-color: #1d4ed8; }
+        .reset-btn { background-color: white; color: var(--secondary); border: 1px solid var(--border); }
+        .reset-btn:hover { background-color: #f1f5f9; color: var(--danger); border-color: var(--danger); }
+        .cta-box {
+            background-color: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            color: var(--warning-text);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 5px solid var(--accent);
+            font-size: 13px;
+            margin-top: 15px;
+        }
+        .cta-title { font-weight: 700; margin-right: 5px; }
+        .pillar-section {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background-color: white;
+        }
+        .pillar-header {
+            background-color: #f8fafc;
+            color: var(--primary);
+            padding: 10px 15px;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            background-color: #f1f5f9;
+            color: var(--secondary);
+            font-size: 12px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+            transition: background-color 0.3s;
+        }
+        .col-req { width: 38%; }
+        .col-rat { width: 28%; }
+        .col-input { width: 34%; }
+        .requirement-text {
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        .sub-text {
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.4;
+        }
+        .sin-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .sin-tag:hover { opacity: 0.85; transform: translateY(-1px); }
+        .sin-tag::after { content: "\u2139\uFE0F"; margin-left: 4px; font-size: 10px; opacity: 0.6; }
+        .sin-lookahead { background-color: #fee2e2; color: #991b1b; }
+        .sin-survivorship { background-color: #ffedd5; color: #9a3412; }
+        .sin-narrative { background-color: #fef3c7; color: #92400e; }
+        .sin-objective { background-color: #e0e7ff; color: #3730a3; }
+        .sin-cost { background-color: #f3e8ff; color: #6b21a8; }
+        .assessment-wrapper { display: flex; flex-direction: column; gap: 8px; }
+        .status-select {
+            width: 100%;
+            padding: 6px;
+            font-size: 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background-color: white;
+            color: var(--secondary);
+            cursor: pointer;
+        }
+        .status-select.selected-pass { border-color: var(--success); color: var(--success); font-weight: 600; }
+        .status-select.selected-fail { border-color: var(--danger); color: var(--danger); font-weight: 600; }
+        .comment-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            font-size: 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            resize: vertical;
+            min-height: 36px;
+            font-family: inherit;
+        }
+        tr.row-pass td { background-color: #f0fdf4; border-bottom-color: #bbf7d0; }
+        tr.row-fail td { background-color: #fef2f2; border-bottom-color: #fecaca; }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            color: #94a3b8;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+        }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-overlay); display: flex; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 12px;
+            max-width: 500px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: translateY(10px); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-header {
+            font-size: 16px; font-weight: 800; margin-bottom: 15px; padding-bottom: 10px;
+            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body { font-size: 13px; line-height: 1.6; color: var(--secondary); }
+        .modal-example-box {
+            background-color: #f1f5f9; border-left: 4px solid var(--accent);
+            padding: 12px; margin-top: 15px; border-radius: 0 6px 6px 0; font-style: italic;
+        }
+        .close-modal { background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; }
+        .close-modal:hover { color: var(--danger); }
+        @media print {
+            @page { margin: 0; size: A4; }
+            body {
+                padding: 1.5cm 2cm;
+                margin: 0;
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 11pt;
+                line-height: 1.3;
+                color: #000 !important;
+                background-color: #fff !important;
+            }
+            .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; box-shadow: none !important; overflow: visible !important; }
+            .controls-area, .button-group, .sin-tag::after, .modal-overlay, footer, .reset-btn, .download-btn, .cta-box, .sub-text { display: none !important; }
+            header { border-bottom: 2px solid #000 !important; margin-bottom: 15px; padding-bottom: 10px; text-align: center; }
+            h1 { font-size: 16pt; text-transform: uppercase; margin: 0 0 5px 0; letter-spacing: 0.5px; }
+            .subtitle { font-size: 11pt; font-style: italic; color: #000 !important; }
+            .pillar-section { border: none !important; box-shadow: none !important; margin-bottom: 15px; break-inside: auto !important; }
+            .pillar-header { background: transparent !important; color: #000 !important; border-bottom: 1px solid #000 !important; padding: 4px 0; font-size: 12pt; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
+            table { width: 100%; border-collapse: collapse; border-top: 1px solid #000; border-bottom: 1px solid #000; table-layout: fixed; }
+            th, thead { display: none !important; }
+            tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+            td { border-bottom: 1px solid #ddd !important; background: transparent !important; color: #000 !important; padding: 8px 4px; vertical-align: middle; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
+            tr:last-child td { border-bottom: none !important; }
+            tr.row-pass td, tr.row-fail td { background-color: transparent !important; }
+            .col-req { width: 45%; }
+            .col-rat { width: 25%; }
+            .col-input { width: 30%; }
+            .requirement-text { font-family: 'Times New Roman', Times, serif; font-size: 11pt; font-weight: bold; }
+            .sin-tag { background-color: transparent !important; color: #000 !important; border: none !important; font-style: italic; font-size: 10pt; padding: 0 !important; margin: 0 0 2px 0 !important; display: block !important; text-align: left !important; text-indent: 0 !important; width: 100% !important; }
+            .sin-tag::after { content: none !important; }
+            .assessment-wrapper { gap: 2px; }
+            .status-select { border: none !important; background: transparent !important; color: #000 !important; font-family: 'Times New Roman', Times, serif; font-weight: bold; font-size: 11pt; text-transform: uppercase; padding: 0; appearance: none; -webkit-appearance: none; }
+            .comment-input { display: none; }
+            .print-comment-div { display: block !important; font-family: 'Times New Roman', Times, serif; font-size: 10pt; font-style: italic; margin-top: 2px; border: none; width: 100%; color: #333; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="modal-overlay" id="infoModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span id="modalTitle">Sin Title</span>
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="modalDescription">Description goes here.</div>
+            <div class="modal-example-box">
+                <strong>Example:</strong>
+                <span id="modalExample">Example text goes here.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="resetModal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <span>Confirm Reset</span>
+            <button class="close-modal" onclick="closeResetModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            Are you sure you want to clear all inputs and start over?
+        </div>
+        <div style="margin-top: 20px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn reset-btn" onclick="closeResetModal()">Cancel</button>
+            <button class="btn download-btn" style="background-color: var(--danger);" onclick="performReset()">Yes, Reset</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="printModal">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <span>PDF Save Guide</span>
+            <button class="close-modal" onclick="closePrintModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p><strong>1. When the print window opens:</strong><br>Select <strong>'Save as PDF'</strong> as the destination/printer.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+            <p style="color: #d97706; font-weight: 700;">&#9888;&#65039; Print window didn't open?</p>
+            <p>It might be blocked by browser security settings.<br>
+            Press <strong>Ctrl + P</strong> (Mac: Cmd + P) on your keyboard to manually open the high-quality print dialog.</p>
+        </div>
+        <div style="margin-top: 20px; text-align: right;">
+            <button class="btn download-btn" onclick="closePrintModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<div class="container" id="checklist-container">
+    <header>
+        <h1>Financial LLM Structural Validity Checklist</h1>
+        <div class="subtitle">Self-Assessment Tool for Rigorous Financial Decision-Making Systems</div>
+        <div class="controls-area">
+            <div class="score-card">
+                <span>Validity Score:</span>
+                <span id="score-display" class="score-value">0% (0/0)</span>
+            </div>
+            <div class="button-group">
+                <button class="btn reset-btn" onclick="resetForm()">Reset Form</button>
+                <button class="btn download-btn" onclick="generatePDF()">Download PDF</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="cta-box">
+        <span class="cta-title">Strict Adherence Required:</span>
+        This framework sets minimum requirements for interpreting a backtest as evidence of deployment performance.
+    </div>
+
+    <!-- 1. Temporal Sanitation -->
+    <div class="pillar-section">
+        <div class="pillar-header">
+            <span>1. Temporal Sanitation</span>
+            <span class="subtitle" style="font-size: 10pt; font-weight: normal; margin: 0;">Non-Anticipativity</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-req">Requirement</th>
+                    <th class="col-rat">Rationale</th>
+                    <th class="col-input">Assessment</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Parametric Knowledge Cutoff Disclosure</span>
+                        <div class="sub-text">Are the latest dates of pre-training and fine-tuning disclosed? Does the evaluation window strictly follow these dates?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-lookahead" onclick="showSin(1, 'param')">Sin #1: Look-Ahead Bias</span>
+                        <div class="sub-text">Prevents "Time Travel" where the model uses future knowledge embedded in its weights to predict the past.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes (e.g., cutoff dates)..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Point-in-Time (PIT) Retrieval</span>
+                        <div class="sub-text">Are retrieval sources constructed using ONLY documents available at the specific decision time? (No live web search or mutable wikis).</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-lookahead" onclick="showSin(1, 'rag')">Sin #1: Look-Ahead Bias</span>
+                        <div class="sub-text">Prevents "External Leakage" where search engines rank historical docs based on future popularity or edits.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes on data sources..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Full Trace Logging</span>
+                        <div class="sub-text">Are prompts, retrieved documents, tool outputs, and timestamps logged for temporal auditing?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-lookahead" onclick="showSin(1, 'audit')">Sin #1: Look-Ahead Bias</span>
+                        <div class="sub-text">Ensures verifiability of the information set available at every specific decision step.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 2. Dynamic Universe Construction -->
+    <div class="pillar-section">
+        <div class="pillar-header">
+            <span>2. Dynamic Universe Construction</span>
+            <span class="subtitle" style="font-size: 10pt; font-weight: normal; margin: 0;">Survivorship Control</span>
+        </div>
+        <table>
+            <tbody>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Time-Indexed Tradable Universe</span>
+                        <div class="sub-text">Does the simulation sample from the universe active at the decision time, including delisted or failed entities?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-survivorship" onclick="showSin(2, 'univ')">Sin #2: Survivorship Bias</span>
+                        <div class="sub-text">Ensures the model faces the true probability of failure inherent in financial markets.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes on universe handling..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Unbiased Task Sampling</span>
+                        <div class="sub-text">Are benchmarks constructed without conditioning on ex-post news volume or present-day prominence?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-survivorship" onclick="showSin(2, 'news')">Sin #2: Survivorship Bias</span>
+                        <div class="sub-text">Prevents testing only on "winners" that generated enough historical news to be remembered.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Failure Regime Reporting</span>
+                        <div class="sub-text">Does the study report outcomes separately for surviving vs. non-surviving entities?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-survivorship" onclick="showSin(2, 'report')">Sin #2: Survivorship Bias</span>
+                        <div class="sub-text">Prevents inflation of performance metrics by hiding losses from failed firms.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. Rationale Robustness -->
+    <div class="pillar-section">
+        <div class="pillar-header">
+            <span>3. Rationale Robustness</span>
+            <span class="subtitle" style="font-size: 10pt; font-weight: normal; margin: 0;">Causal Validity</span>
+        </div>
+        <table>
+            <tbody>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Evidence Grounding & Auditing</span>
+                        <div class="sub-text">Are rationales explicitly grounded in retrieved documents? Are claims audited for factual hallucinations?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-narrative" onclick="showSin(3, 'illusion')">Sin #3: Narrative Bias</span>
+                        <div class="sub-text">Prevents the "Illusion of Understanding" where models suture disparate signals into false but coherent narratives.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Negative Controls & Entity Substitution</span>
+                        <div class="sub-text">Does the system refrain from generating detailed causal stories when inputs are scrambled or entities are substituted?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-narrative" onclick="showSin(3, 'control')">Sin #3: Narrative Bias</span>
+                        <div class="sub-text">Tests if the "reasoning" is genuine or just a retrieval of memorized company-specific text patterns.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4. Epistemic Calibration -->
+    <div class="pillar-section">
+        <div class="pillar-header">
+            <span>4. Epistemic Calibration</span>
+            <span class="subtitle" style="font-size: 10pt; font-weight: normal; margin: 0;">Uncertainty & Abstention</span>
+        </div>
+        <table>
+            <tbody>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Explicit Abstention Option</span>
+                        <div class="sub-text">Does the action space include "No Trade" or "Do Not Know", and is it scored as a legitimate outcome?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-objective" onclick="showSin(4, 'guess')">Sin #4: Objective Bias</span>
+                        <div class="sub-text">Prevents the model from being forced to hallucinate or guess to satisfy a "helpful assistant" objective.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Calibrated Confidence/Distribution</span>
+                        <div class="sub-text">Does the system output a predictive distribution or a structured uncertainty estimate?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-objective" onclick="showSin(4, 'conf')">Sin #4: Objective Bias</span>
+                        <div class="sub-text">Financial decisions require calibrated probability, not just fluent text (verbalized overconfidence).</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 5. Realistic Implementation Constraints -->
+    <div class="pillar-section">
+        <div class="pillar-header">
+            <span>5. Realistic Implementation</span>
+            <span class="subtitle" style="font-size: 10pt; font-weight: normal; margin: 0;">Cost & Latency</span>
+        </div>
+        <table>
+            <tbody>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Latency-Aware Execution</span>
+                        <div class="sub-text">Are trades executed at the price available AFTER generation is complete (accounting for slippage), not the price at the start?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-cost" onclick="showSin(5, 'latency')">Sin #5: Cost Bias (Latency)</span>
+                        <div class="sub-text">Zero-latency assumptions overestimate returns for time-sensitive strategies given the slow inference of LLMs.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-req">
+                        <span class="requirement-text">Net Utility Reporting</span>
+                        <div class="sub-text">Are metrics reported strictly after deducting transaction costs and operational inference costs?</div>
+                    </td>
+                    <td class="col-rat">
+                        <span class="sin-tag sin-cost" onclick="showSin(5, 'money')">Sin #5: Cost Bias (Monetary)</span>
+                        <div class="sub-text">Prevents complex, expensive pipelines from appearing superior to simple baselines when they are economically unviable.</div>
+                    </td>
+                    <td class="col-input">
+                        <div class="assessment-wrapper">
+                            <select class="status-select" onchange="updateRowStatus(this)">
+                                <option value="">Select Status...</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                                <option value="na">N/A</option>
+                            </select>
+                            <textarea class="comment-input" placeholder="Notes..."></textarea>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 | Methodological rigor is not optional in financial science. | <a href="https://arxiv.org/abs/2602.14233" style="color: #64748b;">arXiv:2602.14233</a></p>
+    </footer>
+</div>
+
+<script>
+    const sinDetails = {
+        1: { title: "Sin #1: Look-Ahead Bias", description: "Information unavailable at the historical decision time leaks into the model's inputs or labels.", examples: { param: "A model trained on data up to 2023 is used to 'predict' the stock market crash of 2022. It performs amazingly because it has 'Time Traveled'\u2014it already knows the crash happened via its training weights.", rag: "Searching for 'January 6 events' in a simulation dated 2020. A modern search engine (like Google) will return results about the 2021 Capitol riots because it ranks by modern relevance, leaking future events into the past simulation.", audit: "Without logging, a researcher might accidentally feed next-day open prices into a close-price prediction model, creating a 'perfect' predictor that is useless in reality." } },
+        2: { title: "Sin #2: Survivorship Bias", description: "Evaluating performance on a universe that excludes failed or delisted entities.", examples: { univ: "Testing a 2008 strategy only on companies listed in the S&P 500 *today*. This ignores companies like Lehman Brothers or Enron that went bankrupt. The strategy looks safe because it never sees the failures.", news: "Creating a test dataset by picking the 'most discussed' companies of the last decade. This inevitably selects winners (Survivors) and ignores companies that quietly failed, inflating the test score.", report: "Reporting a 90% accuracy rate but hiding the fact that the model refused to answer for the 50% of companies that were most difficult (and likely to fail)." } },
+        3: { title: "Sin #3: Narrative Bias", description: "The model generates coherent, persuasive causal stories that are not supported by data.", examples: { illusion: "An LLM sees a stock drop and a random news snippet about a CEO's lunch. It weaves a convincing story linking the two: 'The market reacted negatively to the CEO's dietary habits.' It sounds logical but is hallucinated causality.", control: "If you scramble the input numbers, the model *should* be confused. If it still outputs the exact same 'The company is strong because...' story, it's just reciting memorized text, not reasoning." } },
+        4: { title: "Sin #4: Objective Bias", description: "The mismatch between 'helpful assistant' training and the financial need for uncertainty.", examples: { guess: "When asked 'Will Stock X go up?', a standard LLM is trained to be helpful, so it answers 'Yes, because...' instead of honestly saying 'I don't have enough information.' In finance, a guess is worse than silence.", conf: "A model says it is '99% confident' in a trade. In reality, it is just using confident language it learned from the internet. A true financial model must have calibrated mathematical probability, not verbal bravado." } },
+        5: { title: "Sin #5: Cost Bias", description: "Ignoring the realities of execution latency and operational costs.", examples: { latency: "A strategy detects a news event and 'trades' instantly in the simulation. In reality, the LLM takes 5 seconds to read and generate. By then, high-frequency algorithms have already moved the price, turning the profit into a loss.", money: "A complex 'Agent' system makes 1% more profit than a simple baseline but requires 50 GPT-4 calls per minute. The API costs ($$$) are higher than the trading profit ($), meaning the system actually loses money." } }
+    };
+
+    function showSin(sinId, type) {
+        const sin = sinDetails[sinId];
+        document.getElementById('modalTitle').textContent = sin.title;
+        document.getElementById('modalDescription').textContent = sin.description;
+        document.getElementById('modalExample').textContent = sin.examples[type] || "General example not found.";
+        document.getElementById('infoModal').classList.add('active');
+    }
+    function closeModal() { document.getElementById('infoModal').classList.remove('active'); }
+    document.getElementById('infoModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+    function resetForm() { document.getElementById('resetModal').classList.add('active'); }
+    function closeResetModal() { document.getElementById('resetModal').classList.remove('active'); }
+
+    function closePrintModal() {
+        document.getElementById('printModal').classList.remove('active');
+        cleanupAfterPrint();
+    }
+
+    document.getElementById('resetModal').addEventListener('click', function(e) { if (e.target === this) closeResetModal(); });
+    document.getElementById('printModal').addEventListener('click', function(e) { if (e.target === this) closePrintModal(); });
+
+    function performReset() {
+        document.querySelectorAll('.status-select').forEach(sel => { sel.value = ""; sel.classList.remove('selected-pass', 'selected-fail'); });
+        document.querySelectorAll('.comment-input').forEach(ta => ta.value = "");
+        document.querySelectorAll('tr').forEach(row => row.classList.remove('row-pass', 'row-fail'));
+        updateScore();
+        closeResetModal();
+    }
+
+    function updateRowStatus(selectElement) {
+        const row = selectElement.closest('tr');
+        const value = selectElement.value;
+        row.classList.remove('row-pass', 'row-fail');
+        selectElement.classList.remove('selected-pass', 'selected-fail');
+        if (value === 'pass') { row.classList.add('row-pass'); selectElement.classList.add('selected-pass'); }
+        else if (value === 'fail') { row.classList.add('row-fail'); selectElement.classList.add('selected-fail'); }
+        updateScore();
+    }
+
+    function updateScore() {
+        const selects = document.querySelectorAll('.status-select');
+        let total = 0, passed = 0, na = 0;
+        selects.forEach(sel => {
+            if (sel.value === 'pass') passed++;
+            if (sel.value === 'na') na++;
+            total++;
+        });
+        const effectiveTotal = total - na;
+        const percentage = effectiveTotal > 0 ? Math.round((passed / effectiveTotal) * 100) : 0;
+        document.getElementById('score-display').textContent = `${percentage}% (${passed}/${effectiveTotal})`;
+    }
+
+    function prepareForPrint() {
+        document.querySelectorAll('textarea').forEach(ta => {
+            if (ta.nextElementSibling && ta.nextElementSibling.classList.contains('print-comment-div')) return;
+            const div = document.createElement('div');
+            div.className = 'print-comment-div';
+            div.textContent = ta.value;
+            ta.style.display = 'none';
+            ta.parentNode.insertBefore(div, ta.nextSibling);
+        });
+        document.querySelectorAll('select').forEach(sel => {
+            const text = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+            sel.setAttribute('data-print-value', text);
+        });
+    }
+
+    function cleanupAfterPrint() {
+        document.querySelectorAll('.print-comment-div').forEach(div => div.remove());
+        document.querySelectorAll('textarea').forEach(ta => ta.style.display = '');
+    }
+
+    window.addEventListener('beforeprint', prepareForPrint);
+    window.addEventListener('afterprint', cleanupAfterPrint);
+
+    function generatePDF() {
+        document.getElementById('printModal').classList.add('active');
+        prepareForPrint();
+        setTimeout(() => {
+            try { window.print(); } catch (e) { console.error("Print blocked:", e); }
+        }, 500);
+    }
+
+    updateScore();
+</script>
+
+</body>
+</html>
