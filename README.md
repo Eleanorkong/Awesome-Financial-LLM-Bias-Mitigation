@@ -149,11 +149,7 @@ We are preparing an interactive dashboard for visual exploration of bias pattern
 ### Financial LLM Surveys
 - [A Survey of Large Language Models for Financial Applications](https://arxiv.org/abs/2406.11903) (2024)
 
-### Benchmarks & Tools
-- [FinEval](https://github.com/SUFE-AIFLM-Lab/FinEval) — Financial domain evaluation benchmark
-- [PIXIU](https://github.com/The-FinAI/PIXIU) — Multi-task financial LLM benchmark
-- [FinBen](https://github.com/The-FinAI/FinBen) — Open finance LLM leaderboard
-
+<!-- TODO: Add more resources -->
 ---
 
 ## 🖊️ Citation
@@ -182,7 +178,7 @@ We welcome contributions from the community:
 
 ```bash
 # Fork and clone
-git clone https://github.com/YOUR_USERNAME/Awesome-Financial-LLM-Bias-Mitigation.git
+git clone https://github.com/Eleanorkong/Awesome-Financial-LLM-Bias-Mitigation.git
 
 # Create a feature branch
 git checkout -b add-new-resource
