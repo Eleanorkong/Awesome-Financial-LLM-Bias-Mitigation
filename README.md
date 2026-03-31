@@ -12,7 +12,7 @@
 
 *A curated resource hub for understanding, detecting, and mitigating biases in Large Language Models applied to financial domains.*
 
-[📄 Read the Paper](https://arxiv.org/abs/2602.14233) · [📊 Literature Review Dashboard](#-literature-review-dashboard) · [✅ Structural Validity Checklist](https://eleanorkong.github.io/Awesome-Financial-LLM-Bias-Mitigation/checklist.html) · [🐛 Report Issues](https://github.com/Eleanorkong/Awesome-Financial-LLM-Bias-Mitigation/issues)
+[📄 Read the Paper](https://arxiv.org/abs/2602.14233) · [🔍 Automatic Bias Detection](#-automatic-bias-detection-dashboard) · [📊 Literature Review Dashboard](#-literature-review-dashboard) · [✅ Structural Validity Checklist](https://eleanorkong.github.io/Awesome-Financial-LLM-Bias-Mitigation/checklist.html) · [🐛 Report Issues](https://github.com/Eleanorkong/Awesome-Financial-LLM-Bias-Mitigation/issues)
 
 </div>
 
@@ -26,7 +26,7 @@ We identify five recurring sources of bias — **"The Five Sins"** — and propo
 
 - **A Structural Validity Checklist** — a web-based self-assessment tool for researchers and reviewers
 - **An Interactive Literature Review Dashboard** — visual exploration of bias patterns across 164 papers
-- **An Automatic Bias Detection Tool** *(coming soon)* — upload your paper and automatically detect potential biases, generate a comprehensive risk report, and receive tailored improvement suggestions
+- **An [Automatic Bias Detection Dashboard](automatic_bias_detection_dashboard/)** — upload your paper and automatically detect potential biases, generate a comprehensive risk report, and receive tailored improvement suggestions
 
 ---
 
@@ -37,7 +37,7 @@ We identify five recurring sources of bias — **"The Five Sins"** — and propo
 - [The "Five Sins" of Financial LLM Evaluation](#-the-five-sins-of-financial-llm-evaluation)
 - [Structural Validity Framework](#-structural-validity-framework)
 - [Interactive Checklist Tool](#-interactive-checklist-tool)
-- [Automatic Bias Detection (Coming Soon)](#-automatic-bias-detection-coming-soon)
+- [Automatic Bias Detection Dashboard](#-automatic-bias-detection-dashboard)
 - [Literature Review Dashboard](#-literature-review-dashboard)
 - [Related Resources](#-related-resources)
 - [Citation](#-citation)
@@ -106,19 +106,31 @@ We provide a web-based implementation of the Structural Validity Framework. This
 
 ---
 
-## 🔮 Automatic Bias Detection (Coming Soon)
+## 🔍 Automatic Bias Detection Dashboard
 
-> **We are building an interactive tool that automatically detects biases from your paper and generates a comprehensive risk report with actionable improvement suggestions.**
+Upload a financial LLM research paper (PDF) and automatically evaluate it against all 12 checklist items across the Five Sins. The tool generates a detailed report with evidence-backed verdicts and actionable recommendations.
 
-Planned features:
+### 👉 [Run the Dashboard Locally](automatic_bias_detection_dashboard/)
 
-- **Upload your paper** (PDF) and the system will analyze it against the Five Sins
-- **Automatic bias detection** — identifies which of the five biases your methodology is exposed to
-- **Comprehensive risk report** — a structured breakdown of detected risks with severity levels
-- **Tailored improvement suggestions** — specific, actionable recommendations to mitigate each identified bias
-- **Exportable assessment** — download a full report for documentation, peer review, or submission
+```bash
+cd automatic_bias_detection_dashboard
+python3 -m venv venv
+source venv/bin/activate
+pip install -e .
+python run.py
+# Open http://localhost:8000
+```
 
-Stay tuned — this feature is under active development. Star this repo to get notified when it launches.
+**Features:**
+
+- **Upload your paper** (PDF) and the system evaluates it against all 12 checklist items
+- **Optional code analysis** — provide a GitHub repo URL to cross-reference paper claims against implementation
+- **Multi-provider LLM support** — works with Claude, GPT, Gemini, and local Ollama models
+- **Comprehensive report** — Pass/Fail/N/A verdicts with evidence quotes, detailed explanations, and actionable recommendations
+- **Cross-check detection** — identifies compounding bias interactions (e.g., look-ahead + survivorship)
+- **Export** — download results as PDF, JSON, or plain text
+
+Only **2 LLM API calls** per paper. See the [dashboard README](automatic_bias_detection_dashboard/README.md) for full setup and usage details.
 
 ---
 

@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Structural Validity Framework — Bias Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #faf8f4;
+      --cream-dark: #f0ece4;
+      --white: #ffffff;
+      --ink: #1a1a2e;
+      --ink-light: #2d2d44;
+      --text: #3a3a52;
+      --text-secondary: #6b6b82;
+      --text-tertiary: #9a9aac;
+      --rule: #e2ddd4;
+      --rule-light: #eee9e1;
+      --vermillion: #c0392b;
+      --vermillion-light: #e8d5d2;
+      --vermillion-bg: #fdf5f4;
+      --sage: #2e7d5b;
+      --sage-light: #d4e8dd;
+      --sage-bg: #f2f8f5;
+      --amber: #b8860b;
+      --amber-light: #e8dcc4;
+      --amber-bg: #fdf8ef;
+      --purple: #6a4c93;
+      --purple-light: #ddd4e8;
+      --purple-bg: #f8f5fc;
+      --slate: #64748b;
+      --slate-bg: #f1f5f9;
+      --shadow-sm: 0 1px 3px rgba(26,26,46,0.04), 0 1px 2px rgba(26,26,46,0.03);
+      --shadow-md: 0 4px 12px rgba(26,26,46,0.06), 0 1px 4px rgba(26,26,46,0.04);
+      --shadow-lg: 0 12px 40px rgba(26,26,46,0.08), 0 2px 8px rgba(26,26,46,0.04);
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      line-height: 1.65;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Paper grain texture */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 9999;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    }
+
+    .font-display { font-family: 'Fraunces', Georgia, serif; font-optical-sizing: auto; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fillBar { from { width: 0; } }
+
+    .fade-up { animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .d1 { animation-delay: 0.08s; } .d2 { animation-delay: 0.16s; } .d3 { animation-delay: 0.24s; }
+    .d4 { animation-delay: 0.32s; } .d5 { animation-delay: 0.4s; }
+    .hidden { display: none !important; }
+
+    /* ─── Nav ─── */
+    nav {
+      background: var(--white);
+      border-bottom: 1px solid var(--rule);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      background: rgba(255,255,255,0.92);
+    }
+    .nav-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 18px 32px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .nav-title {
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: 1.15rem;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+    .nav-title em { color: var(--vermillion); font-style: normal; }
+    .nav-subtitle {
+      font-size: 0.78rem;
+      color: var(--text-tertiary);
+      letter-spacing: 0.02em;
+    }
+
+    /* ─── Layout ─── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 56px 32px 80px;
+    }
+    @media (max-width: 640px) {
+      main { padding: 32px 16px 60px; }
+      .nav-inner { padding: 14px 16px; }
+      .grid-3 { grid-template-columns: 1fr !important; }
+      .sins-row { grid-template-columns: repeat(3, 1fr) !important; }
+    }
+
+    /* ─── Cards ─── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .card-section {
+      padding: 24px 28px;
+    }
+    .card-section + .card-section {
+      border-top: 1px solid var(--rule-light);
+    }
+    .section-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 16px;
+    }
+
+    /* ─── Inputs ─── */
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    label.field-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+    select, input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    select:focus, input:focus {
+      border-color: var(--vermillion);
+      box-shadow: 0 0 0 3px var(--vermillion-light);
+    }
+    select option { background: var(--white); }
+
+    /* ─── Drop zone ─── */
+    .drop-zone {
+      border: 2px dashed var(--rule);
+      border-radius: 10px;
+      padding: 44px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .drop-zone:hover, .drop-zone.over {
+      border-color: var(--vermillion);
+      background: var(--vermillion-bg);
+    }
+    .drop-zone .icon-upload {
+      width: 40px; height: 40px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      background: var(--cream-dark);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.3s;
+    }
+    .drop-zone:hover .icon-upload { background: var(--vermillion-light); }
+
+    .file-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--sage-bg);
+      border: 1px solid var(--sage-light);
+      border-radius: 8px;
+      margin-top: 14px;
+    }
+    .file-bar .name { font-weight: 500; font-size: 0.85rem; color: var(--ink); }
+    .file-bar .size { font-size: 0.75rem; color: var(--text-tertiary); }
+    .file-bar button {
+      background: none; border: none;
+      color: var(--text-tertiary);
+      cursor: pointer; font-size: 1.2rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    .file-bar button:hover { color: var(--vermillion); background: var(--vermillion-bg); }
+
+    /* ─── Buttons ─── */
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      background: var(--vermillion);
+      color: white;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: all 0.25s;
+      margin-top: 18px;
+    }
+    .btn-primary:hover { background: #a93226; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .btn-primary:disabled { background: var(--rule); color: var(--text-tertiary); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-ghost {
+      flex: 1;
+      padding: 12px 20px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      background: var(--white);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-ghost:hover { border-color: var(--vermillion); color: var(--vermillion); background: var(--vermillion-bg); }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      color: var(--text-tertiary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      margin-bottom: 28px;
+      transition: color 0.2s;
+    }
+    .btn-back:hover { color: var(--vermillion); }
+
+    /* ─── Five Sins ─── */
+    .sin-cell {
+      text-align: center;
+      padding: 12px 8px;
+      border-right: 1px solid var(--rule-light);
+    }
+    .sin-cell:last-child { border-right: none; }
+    .sin-icon {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 10px;
+    }
+    .sin-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .sin-desc {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      margin-top: 3px;
+    }
+    @media (max-width: 640px) {
+      .sin-cell { border-right: none; border-bottom: 1px solid var(--rule-light); padding: 10px 8px; }
+      .sin-cell:last-child { border-bottom: none; }
+    }
+
+    /* ─── Badges ─── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-pass    { background: var(--sage-bg); color: var(--sage); }
+    .badge-fail    { background: var(--vermillion-bg); color: var(--vermillion); }
+    .badge-skip    { background: var(--slate-bg); color: var(--slate); }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      background: var(--cream-dark);
+      color: var(--text-secondary);
+    }
+
+    /* ─── Segmented Progress Bar ─── */
+    .seg-bar {
+      display: flex;
+      gap: 4px;
+      width: 100%;
+    }
+    .seg {
+      flex: 1;
+      position: relative;
+      height: 56px;
+      background: var(--cream-dark);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .seg-sm { max-width: 72px; }
+    .seg-fill {
+      position: absolute;
+      inset: 0;
+      background: var(--cream-dark);
+      border-radius: 6px;
+      transition: background 0.5s ease;
+    }
+    .seg.done .seg-fill { background: var(--sage); }
+    .seg-label {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      height: 100%;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      padding: 0 4px;
+      transition: color 0.3s;
+      gap: 1px;
+    }
+    .seg-label strong { font-size: 0.82rem; font-weight: 700; }
+    .seg-label small { font-size: 0.68rem; font-weight: 400; opacity: 0.8; }
+    .seg.done .seg-label { color: white; }
+
+    /* ─── Progress Grid (unused, kept for compat) ─── */
+    .prog-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 8px 1fr 1fr 1fr 1fr 1fr;
+      gap: 0;
+      align-items: start;
+    }
+    @media (max-width: 640px) {
+      .prog-grid { grid-template-columns: repeat(4, 1fr); }
+      .prog-divider { display: none; }
+    }
+    .prog-divider {
+      width: 1px;
+      background: var(--rule);
+      align-self: stretch;
+      margin: 4px auto;
+    }
+    .prog-item {
+      text-align: center;
+      padding: 12px 4px;
+      border-radius: 8px;
+      transition: all 0.35s cubic-bezier(0.22,1,0.36,1);
+    }
+    .prog-item.active { background: var(--vermillion-bg); }
+    .prog-item.done { background: var(--sage-bg); }
+    .prog-icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--cream-dark);
+      color: var(--text-tertiary);
+      margin-bottom: 6px;
+      transition: all 0.35s;
+    }
+    .prog-item.active .prog-icon { background: var(--vermillion-light); color: var(--vermillion); }
+    .prog-item.done .prog-icon { background: var(--sage); color: white; }
+    .prog-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      transition: color 0.3s;
+    }
+    .prog-item.active .prog-label { color: var(--vermillion); }
+    .prog-item.done .prog-label { color: var(--sage); }
+    .prog-sub {
+      font-size: 0.65rem;
+      color: var(--text-tertiary);
+      margin-top: 1px;
+      opacity: 0.7;
+    }
+
+    /* ─── Score ─── */
+    .score-track {
+      height: 8px;
+      background: var(--cream-dark);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .score-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* ─── Check Cards ─── */
+    details.check-card {
+      background: var(--white);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    details.check-card summary {
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      transition: background 0.2s;
+    }
+    details.check-card summary::-webkit-details-marker { display: none; }
+    details.check-card summary:hover { background: var(--cream); }
+    details.check-card .arrow { color: var(--text-tertiary); transition: transform 0.3s; }
+    details.check-card[open] .arrow { transform: rotate(180deg); }
+    details.check-card .body {
+      padding: 0 24px 24px;
+      border-top: 1px solid var(--rule-light);
+    }
+
+    .sub-crit {
+      padding: 14px 16px;
+      background: var(--cream);
+      border: 1px solid var(--rule-light);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .evidence {
+      margin-top: 8px;
+      padding-left: 14px;
+      border-left: 2px solid var(--rule);
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      font-style: italic;
+      line-height: 1.55;
+    }
+    .rec-box {
+      padding: 13px 16px;
+      background: #f0f4ff;
+      border: 1px solid #dce3f5;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #3b5998;
+      margin-bottom: 8px;
+      line-height: 1.55;
+    }
+
+    /* ─── Cross-check ─── */
+    .cross-box {
+      background: var(--amber-bg);
+      border: 1px solid var(--amber-light);
+      border-radius: 10px;
+      padding: 22px 26px;
+      margin-bottom: 20px;
+    }
+
+    /* ─── Error ─── */
+    .error-box {
+      background: var(--vermillion-bg);
+      border: 1px solid var(--vermillion-light);
+      border-radius: 10px;
+      padding: 28px;
+    }
+
+    /* ─── Print / PDF ─── */
+    @media print {
+      body { background: white !important; }
+      body::after { display: none !important; }
+      nav { position: static; background: white; border-bottom: 2px solid #1a1a2e; }
+      main { padding: 20px 0; max-width: 100%; }
+      .card { box-shadow: none; border: 1px solid #ddd; }
+      details.check-card summary .arrow { display: none; }
+      .cl-arrow { display: none !important; }
+      .btn-back, .btn-ghost, .btn-primary, #history-section, #upload-section, #progress-section, #error-section, #email-confirm-btn, #email-confirmed, #notify-email { display: none !important; }
+      .flex.gap-3 { display: none !important; }
+      .score-fill, .badge, .sub-crit, .rec-box, tr, .pill, .prog-item { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .cl-select { display: none !important; }
+      .cl-detail { display: table-row !important; } /* expand checklist detail rows */
+    }
+
+    /* ─── History ─── */
+    .history-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--rule-light);
+      cursor: pointer;
+      transition: background 0.15s;
+      gap: 12px;
+    }
+    .history-row:last-child { border-bottom: none; }
+    .history-row:hover { background: var(--cream); margin: 0 -28px; padding: 12px 28px; border-radius: 6px; }
+
+    /* Utility */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; }
+    .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; }
+    .mt-5 { margin-top: 20px; } .mt-6 { margin-top: 24px; }
+    .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <span class="nav-title">Structural <em>Validity</em> Framework</span>
+    <div class="flex items-center gap-4">
+      <a href="https://eleanorkong.github.io/Awesome-Financial-LLM-Bias-Mitigation/checklist.html" target="_blank" style="font-size:0.95rem;font-weight:500;color:var(--text-secondary);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--vermillion)'" onmouseout="this.style.color='var(--text-secondary)'">Checklist</a>
+      <a href="https://eleanorkong.github.io/Awesome-Financial-LLM-Bias-Mitigation/" target="_blank" style="font-size:0.95rem;font-weight:500;color:var(--text-secondary);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--vermillion)'" onmouseout="this.style.color='var(--text-secondary)'">Paper</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ===== HISTORY ===== -->
+  <section id="history-section" class="hidden fade-up" style="margin-bottom:24px;">
+    <div class="card">
+      <div class="card-section flex items-center justify-between" style="padding-bottom:8px;">
+        <div class="section-label" style="margin:0;">Past Reports</div>
+        <button onclick="clearCache()" style="background:none;border:none;font-size:0.75rem;color:var(--text-tertiary);cursor:pointer;text-decoration:underline;">Clear all</button>
+      </div>
+      <div class="card-section" style="padding-top:0;" id="history-list"></div>
+    </div>
+  </section>
+
+  <!-- ===== UPLOAD ===== -->
+  <section id="upload-section" class="fade-up">
+    <div style="margin-bottom:24px;">
+      <h2 style="font-size:1.6rem;font-weight:600;color:var(--ink);">Bias Detection Analysis</h2>
+      <p style="font-size:1.05rem;color:var(--text-secondary);margin-top:6px;line-height:1.65;">
+        Upload a financial LLM research paper to automatically evaluate it against the
+        <a href="https://eleanorkong.github.io/Awesome-Financial-LLM-Bias-Mitigation/checklist.html" target="_blank" style="color:var(--vermillion);text-decoration:none;font-weight:500;">Structural Validity Framework</a> —
+        5 sections and 12 checklist items covering look-ahead bias, survivorship bias, narrative bias, objective bias, and cost bias, with evidence-backed verdicts and actionable recommendations.
+      </p>
+    </div>
+
+    <div class="card fade-up d1">
+      <div class="card-section">
+        <div class="section-label">Model</div>
+        <div class="grid-3">
+          <div><label class="field-label">Provider</label><select id="provider"></select></div>
+          <div><label class="field-label">Model</label><select id="model"></select></div>
+          <div id="api-key-group"><label class="field-label">API Key</label><input id="api-key" type="password" placeholder="sk-..."></div>
+        </div>
+        <div id="custom-model-group" class="hidden" style="margin-top:10px;">
+          <label class="field-label">Model ID</label>
+          <input id="custom-model" type="text" placeholder="e.g. openai/gpt-5.4, anthropic/claude-opus-4-6, gemini/gemini-2.5-pro" style="width:100%;padding:10px 14px;border:1px solid var(--rule);border-radius:8px;background:var(--cream);color:var(--ink);font-family:'Outfit',sans-serif;font-size:0.85rem;outline:none;">
+        </div>
+        <div style="margin-top:10px;text-align:right;">
+          <span style="font-size:0.7rem;color:var(--text-tertiary);">
+            Find model IDs: <a href="https://docs.anthropic.com/en/docs/about-claude/models" target="_blank" style="color:var(--vermillion);text-decoration:none;">Anthropic</a> · <a href="https://developers.openai.com/docs/models" target="_blank" style="color:var(--vermillion);text-decoration:none;">OpenAI</a> · <a href="https://ai.google.dev/gemini-api/docs/models" target="_blank" style="color:var(--vermillion);text-decoration:none;">Google</a> · <a href="https://ollama.com/library" target="_blank" style="color:var(--vermillion);text-decoration:none;">Ollama</a>
+          </span>
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label">Paper</div>
+        <div id="drop-zone" class="drop-zone">
+          <div class="icon-upload">
+            <svg width="18" height="18" fill="none" stroke="var(--text-tertiary)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 17l.87 1.74A2 2 0 006.66 20h10.68a2 2 0 001.79-1.11L20 17"/></svg>
+          </div>
+          <p style="font-size:0.88rem;color:var(--text-secondary);">
+            <strong style="color:var(--vermillion);">Choose a file</strong> or drag it here
+          </p>
+          <p style="font-size:0.72rem;color:var(--text-tertiary);margin-top:2px;">PDF format</p>
+          <input id="file-input" type="file" accept=".pdf" style="display:none">
+        </div>
+        <div id="file-info" class="hidden file-bar">
+          <div>
+            <div class="name" id="file-name"></div>
+            <div class="size" id="file-size"></div>
+          </div>
+          <button id="clear-file" title="Remove">&times;</button>
+        </div>
+        <div style="margin-top:14px;">
+          <label class="field-label">GitHub Repository URL <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional, for code analysis)</span></label>
+          <input id="repo-url" type="text" placeholder="https://github.com/user/repo" style="width:100%;padding:10px 14px;border:1px solid var(--rule);border-radius:8px;background:var(--cream);color:var(--ink);font-family:'Outfit',sans-serif;font-size:0.85rem;outline:none;">
+          <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:4px;">If provided, the system will also analyze the source code for logging, data loading, cost calculations, etc.</div>
+        </div>
+        <button id="analyze-btn" class="btn-primary" disabled>Analyze Paper</button>
+      </div>
+    </div>
+
+    <div class="card fade-up d2" style="margin-top:24px;">
+      <div class="card-section" style="padding:16px 24px;">
+        <div class="section-label" style="margin-bottom:14px;">The Five Sins Checked</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;">
+          <div class="sin-cell"><div class="sin-icon" style="background:var(--vermillion-bg);color:var(--vermillion);">&#x23F0;</div><div class="sin-name">Look-Ahead</div><div class="sin-desc">Temporal Sanitation</div></div>
+          <div class="sin-cell"><div class="sin-icon" style="background:#fff4ec;color:#c2540a;">&#x1F4C9;</div><div class="sin-name">Survivorship</div><div class="sin-desc">Dynamic Universe</div></div>
+          <div class="sin-cell"><div class="sin-icon" style="background:var(--purple-bg);color:var(--purple);">&#x1F4D6;</div><div class="sin-name">Narrative</div><div class="sin-desc">Rationale Robustness</div></div>
+          <div class="sin-cell"><div class="sin-icon" style="background:var(--amber-bg);color:var(--amber);">&#x1F3AF;</div><div class="sin-name">Objective</div><div class="sin-desc">Epistemic Calibration</div></div>
+          <div class="sin-cell"><div class="sin-icon" style="background:var(--sage-bg);color:var(--sage);">&#x1F4B0;</div><div class="sin-name">Cost</div><div class="sin-desc">Realistic Constraints</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROGRESS ===== -->
+  <section id="progress-section" class="hidden fade-up">
+    <div class="card">
+      <div class="card-section">
+        <div class="flex items-center justify-between mb-3">
+          <span id="progress-status" style="font-size:0.95rem;font-weight:600;color:var(--ink);">Analyzing paper...</span>
+          <span id="progress-pct" style="font-size:0.85rem;font-weight:600;color:var(--vermillion);">0 / 7</span>
+        </div>
+        <div class="seg-bar">
+          <div class="seg seg-sm" data-step="extract"><div class="seg-fill"></div><span class="seg-label">Extract</span></div>
+          <div class="seg seg-sm" data-step="classify"><div class="seg-fill"></div><span class="seg-label">Classify</span></div>
+          <div class="seg" data-step="sec1"><div class="seg-fill"></div><span class="seg-label"><strong>Look-Ahead</strong><small>Temporal Sanitation</small></span></div>
+          <div class="seg" data-step="sec2"><div class="seg-fill"></div><span class="seg-label"><strong>Survivorship</strong><small>Dynamic Universe</small></span></div>
+          <div class="seg" data-step="sec3"><div class="seg-fill"></div><span class="seg-label"><strong>Narrative</strong><small>Rationale Robustness</small></span></div>
+          <div class="seg" data-step="sec4"><div class="seg-fill"></div><span class="seg-label"><strong>Objective</strong><small>Epistemic Calibration</small></span></div>
+          <div class="seg" data-step="sec5"><div class="seg-fill"></div><span class="seg-label"><strong>Cost</strong><small>Realistic Implementation</small></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== REPORT ===== -->
+  <section id="report-section" class="hidden fade-up">
+    <button id="back-btn" class="btn-back">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+      New analysis
+    </button>
+
+    <div class="card mb-4">
+      <div class="card-section">
+        <div class="flex justify-between items-center" style="flex-wrap:wrap;gap:14px;">
+          <div style="flex:1;min-width:240px;">
+            <h2 id="report-title" class="font-display" style="font-size:1.5rem;color:var(--ink);line-height:1.25;letter-spacing:-0.015em;"></h2>
+            <p id="report-meta" style="font-size:0.75rem;color:var(--text-tertiary);margin-top:6px;"></p>
+          </div>
+        </div>
+        <div id="classification-row" class="flex flex-wrap gap-2 mt-3"></div>
+        <div id="classification-detail" class="mt-4" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Checklist Results (grouped by section) -->
+    <div id="checklist-results" class="mb-4"></div>
+
+    <div id="cross-checks" class="hidden"></div>
+
+    <div class="card mb-4" id="summary-card">
+      <div class="card-section">
+        <div class="section-label">Executive Summary</div>
+        <div id="executive-summary" style="font-size:0.9rem;color:var(--text-secondary);line-height:1.8;"></div>
+      </div>
+    </div>
+
+    <div class="flex gap-3" style="margin-bottom:40px;">
+      <button id="export-pdf" class="btn-ghost" style="background:var(--vermillion);color:white;border-color:var(--vermillion);">Download PDF Report</button>
+      <button id="export-json" class="btn-ghost">Export JSON</button>
+      <button id="export-text" class="btn-ghost">Export Text</button>
+    </div>
+  </section>
+
+  <!-- ===== ERROR ===== -->
+  <section id="error-section" class="hidden fade-up" style="max-width:540px;">
+    <div class="error-box">
+      <div class="section-label" style="color:var(--vermillion);">Analysis Failed</div>
+      <p id="error-message" style="font-size:0.9rem;color:var(--text-secondary);margin-top:4px;"></p>
+      <button id="error-back-btn" class="btn-ghost mt-4" style="flex:none;">Try again</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+let selectedFile=null,reportData=null,modelPresets={};
+
+// -- Badges --
+const V={pass:{c:'badge-pass',l:'Pass',i:'\u2713'},fail:{c:'badge-fail',l:'Fail',i:'\u2717'},not_applicable:{c:'badge-skip',l:'N/A',i:'\u2014'}};
+function vb(k){const s=V[k]||V.not_applicable;return`<span class="badge ${s.c}">${s.i} ${s.l}</span>`;}
+function pl(t){return`<span class="pill">${t}</span>`;}
+
+// -- LocalStorage --
+function savedReports(){try{return JSON.parse(localStorage.getItem('bias_reports_v2')||'[]');}catch{return[];}}
+function saveReport(r){const all=savedReports();all.unshift({id:r.report_id,title:r.paper_title,verdict:r.overall_verdict,score:r.checklist_score,date:r.analysis_timestamp,data:r});if(all.length>20)all.length=20;localStorage.setItem('bias_reports_v2',JSON.stringify(all));}
+function clearCache(){if(confirm('Clear all saved reports?')){localStorage.removeItem('bias_reports_v2');renderHistory();}}
+function renderHistory(){
+  const all=savedReports(),box=$('history-section');
+  if(!all.length){box.classList.add('hidden');return;}
+  box.classList.remove('hidden');
+  $('history-list').innerHTML=all.map((r,i)=>`<div class="history-row" data-idx="${i}">
+    <div style="flex:1;min-width:0;"><div style="font-weight:500;font-size:0.88rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.title}</div><div style="font-size:0.75rem;color:var(--text-tertiary);">${new Date(r.date).toLocaleDateString()}</div></div>
+    <div style="font-size:0.75rem;color:var(--text-tertiary);">${new Date(r.date).toLocaleTimeString()}</div>
+  </div>`).join('');
+  document.querySelectorAll('.history-row').forEach(el=>el.addEventListener('click',()=>{
+    const r=all[+el.dataset.idx];reportData=r.data;render(r.data);show('report-section');hide('upload-section');hide('history-section');
+  }));
+}
+
+// -- Models --
+fetch('/api/models').then(r=>r.json()).then(d=>{
+  modelPresets=d;
+  Object.keys(d).forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;$('provider').appendChild(o);});
+  updateModels();renderHistory();
+});
+$('provider').addEventListener('change',updateModels);
+$('model').addEventListener('change',()=>{$('custom-model-group').classList.toggle('hidden',$('model').value!=='__custom__');});
+function updateModels(){
+  const p=$('provider').value,m=$('model');m.innerHTML='';
+  (modelPresets[p]||[]).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v.split('/').pop();m.appendChild(o);});
+  const co=document.createElement('option');co.value='__custom__';co.textContent='Custom model...';m.appendChild(co);
+  $('custom-model-group').classList.add('hidden');$('custom-model').value='';
+  $('api-key-group').style.display=p==='Ollama (Local)'?'none':'block';
+}
+
+// -- File --
+const dz=$('drop-zone'),fi=$('file-input');
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files.length)pick(e.dataTransfer.files[0]);});
+fi.addEventListener('change',()=>{if(fi.files.length)pick(fi.files[0]);});
+$('clear-file').addEventListener('click',clr);
+function pick(f){if(f.type!=='application/pdf'){alert('PDF only');return;}selectedFile=f;$('file-name').textContent=f.name;$('file-size').textContent=(f.size/1024).toFixed(0)+' KB';$('file-info').classList.remove('hidden');dz.classList.add('hidden');$('analyze-btn').disabled=false;}
+function clr(){selectedFile=null;fi.value='';$('file-info').classList.add('hidden');dz.classList.remove('hidden');$('analyze-btn').disabled=true;}
+
+// -- Progress --
+let doneCount=0;
+function mark(s,st){
+  const el=document.querySelector(`.seg[data-step="${s}"]`);if(!el)return;
+  if(st==='active'){el.classList.add('active');el.classList.remove('done');}
+  else if(st==='done'){el.classList.remove('active');el.classList.add('done');doneCount++;$('progress-pct').textContent=doneCount+' / 7';if(doneCount>=7)$('progress-pct').style.color='var(--sage)';}
+}
+function resetProg(){doneCount=0;$('progress-pct').style.color='var(--vermillion)';$('progress-pct').textContent='0 / 7';$('progress-status').style.color='var(--ink)';
+  document.querySelectorAll('.seg').forEach(s=>{s.classList.remove('active','done');});
+}
+
+// -- Analysis --
+$('analyze-btn').addEventListener('click',run);
+async function run(){
+  if(!selectedFile)return;
+  const chosenModel=$('model').value==='__custom__'?$('custom-model').value.trim():$('model').value;
+  if(!chosenModel){alert('Please enter a model ID');return;}
+  show('progress-section');hide('upload-section');hide('error-section');hide('report-section');hide('history-section');
+  resetProg();mark('extract','active');$('progress-status').textContent='Extracting PDF...';
+
+  const fd=new FormData();
+  fd.append('file',selectedFile);fd.append('model',chosenModel);fd.append('provider',$('provider').value);fd.append('api_key',$('api-key').value);
+  const repo=($('repo-url')||{}).value||'';if(repo)fd.append('repo_url',repo);
+
+  try{
+    const res=await fetch('/api/analyze/stream',{method:'POST',body:fd});
+    if(!res.ok){const err=await res.json();throw new Error(err.error||'Server error');}
+    const reader=res.body.getReader();const decoder=new TextDecoder();let buffer='';
+    while(true){
+      const{done,value}=await reader.read();if(done)break;
+      buffer+=decoder.decode(value,{stream:true});
+      const lines=buffer.split('\n');buffer=lines.pop()||'';
+      for(const line of lines){
+        if(!line.startsWith('data: '))continue;
+        const msg=JSON.parse(line.slice(6));
+        if(msg.event==='error')throw new Error(msg.error);
+        if(msg.event==='report'){
+          $('progress-status').textContent='Complete!';$('progress-status').style.color='var(--sage)';
+          reportData=msg.data;saveReport(msg.data);render(msg.data);
+          await sleep(400);show('report-section');hide('progress-section');return;
+        }
+        if(msg.status==='running'){
+          if(msg.event==='extract'){mark('extract','active');$('progress-status').textContent='Extracting PDF...';}
+          else if(msg.event==='classify'){mark('classify','active');$('progress-status').textContent='Classifying paper...';}
+          else if(msg.event==='evaluate'){animateSections();}
+        }
+        if(msg.status==='done'){
+          if(msg.event==='extract'){mark('extract','done');$('progress-status').textContent='Classifying paper...';}
+          else if(msg.event==='classify'){mark('classify','done');$('progress-status').textContent='Evaluating checklist...';}
+          else if(msg.event==='evaluate'){finishSections();}
+        }
+      }
+    }
+  }catch(e){hide('progress-section');$('error-message').textContent=e.message;show('error-section');}
+}
+
+// -- Sections for grouping --
+const SECTIONS=[
+  {id:1,name:'Temporal Sanitation',subtitle:'Non-Anticipativity'},
+  {id:2,name:'Dynamic Universe Construction',subtitle:'Survivorship Control'},
+  {id:3,name:'Rationale Robustness',subtitle:'Causal Validity'},
+  {id:4,name:'Epistemic Calibration',subtitle:'Uncertainty & Abstention'},
+  {id:5,name:'Realistic Implementation',subtitle:'Cost & Latency'},
+];
+
+// -- Render report --
+function render(r){
+  $('report-title').textContent=r.paper_title;
+  $('report-meta').textContent=`${r.classification.paper_type.replace(/_/g,' ')} \xb7 ${r.model_used} \xb7 ${new Date(r.analysis_timestamp).toLocaleString()}`;
+  const c=r.classification;
+  $('classification-row').innerHTML=[c.uses_llm&&pl('LLM'),c.uses_rag&&pl('RAG'),c.uses_external_data&&pl('External Data'),c.uses_backtesting&&pl('Backtest'),c.evaluation_period&&pl(c.evaluation_period),...c.models_used.map(m=>pl(m)),...c.datasets_used.map(d=>pl(d))].filter(Boolean).join('');
+
+  // Classification detail
+  const cd=$('classification-detail');
+  cd.style.display='block';
+  cd.innerHTML=`<details style="margin-top:4px;">
+    <summary style="font-size:0.78rem;color:var(--text-tertiary);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="transition:transform 0.2s;"><path d="M9 5l7 7-7 7"/></svg>
+      Paper Classification Details
+    </summary>
+    <div style="margin-top:10px;padding:14px 18px;background:var(--cream);border-radius:8px;border:1px solid var(--rule-light);font-size:0.85rem;line-height:1.7;">
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:6px 12px;">
+        <span style="color:var(--text-tertiary);font-weight:500;">Paper Type</span><span style="color:var(--ink);">${c.paper_type.replace(/_/g,' ')}</span>
+        <span style="color:var(--text-tertiary);font-weight:500;">Uses LLM</span><span style="color:var(--ink);">${c.uses_llm?'Yes':'No'}</span>
+        <span style="color:var(--text-tertiary);font-weight:500;">Uses RAG</span><span style="color:var(--ink);">${c.uses_rag?'Yes':'No'}</span>
+        <span style="color:var(--text-tertiary);font-weight:500;">External Data</span><span style="color:var(--ink);">${c.uses_external_data?'Yes':'No'}</span>
+        <span style="color:var(--text-tertiary);font-weight:500;">Backtesting</span><span style="color:var(--ink);">${c.uses_backtesting?'Yes':'No'}</span>
+        <span style="color:var(--text-tertiary);font-weight:500;">Eval Period</span><span style="color:var(--ink);">${c.evaluation_period||'Not specified'}</span>
+        <span style="color:var(--text-tertiary);font-weight:500;">Models</span><span style="color:var(--ink);">${c.models_used.length?c.models_used.join(', '):'Not specified'}</span>
+        <span style="color:var(--text-tertiary);font-weight:500;">Datasets</span><span style="color:var(--ink);">${c.datasets_used.length?c.datasets_used.join(', '):'Not specified'}</span>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--rule-light);">
+        <span style="color:var(--text-tertiary);font-weight:500;">Methodology: </span><span style="color:var(--text-secondary);">${c.methodology_summary}</span>
+      </div>
+      <div style="margin-top:6px;">
+        <span style="color:var(--text-tertiary);font-weight:500;">Reasoning:</span><span style="color:var(--text-secondary);">${c.paper_type_reasoning}</span>
+      </div>
+    </div>
+  </details>`;
+
+  // Group items by section
+  const items=r.items||[];
+  let html='';
+  SECTIONS.forEach(sec=>{
+    const secItems=items.filter(i=>i.item_id.startsWith(sec.id+'.'));
+    if(!secItems.length)return;
+    const anyFail=secItems.some(i=>i.verdict==='fail'||i.verdict==='not_addressed');
+    html+=`<div class="card mb-3">
+      <div class="card-section flex items-center justify-between" style="padding-bottom:12px;">
+        <div><span style="font-weight:600;font-size:0.95rem;color:var(--ink);">${sec.id}. ${sec.name}</span><span style="font-size:0.82rem;color:var(--text-tertiary);margin-left:10px;">${sec.subtitle}</span></div>
+      </div>
+      ${secItems.map(item=>{
+        const open=item.verdict==='fail'||item.verdict==='not_addressed'?'open':'';
+        const bg=item.verdict==='fail'?'var(--amber-bg)':'transparent';
+        return`<details class="check-item" ${open}>
+          <summary style="padding:14px 24px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;border-top:1px solid var(--rule-light);background:${bg};transition:background 0.2s;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:0.88rem;color:var(--ink);">${item.item_name}</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">${item.question}</div>
+            </div>
+            <div class="flex items-center gap-2" style="margin-left:16px;flex-shrink:0;">
+              ${vb(item.verdict)}
+              <svg class="arrow" width="14" height="14" fill="none" stroke="var(--text-tertiary)" stroke-width="2" viewBox="0 0 24 24" style="transition:transform 0.2s;"><path d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </summary>
+          <div style="padding:16px 24px;border-top:1px solid var(--rule-light);">
+            <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.7;margin-bottom:12px;">${item.description}</div>
+            ${item.evidence&&item.evidence.length?`<div class="section-label" style="margin-bottom:6px;">Evidence</div>${item.evidence.map(e=>`<div class="evidence">"${e}"</div>`).join('')}`:''}
+            ${item.recommendations&&item.recommendations.length?`<div class="section-label mt-3" style="margin-bottom:6px;">Recommendations</div>${item.recommendations.map(r=>`<div class="rec-box">${r}</div>`).join('')}`:''}
+          </div>
+        </details>`;
+      }).join('')}
+    </div>`;
+  });
+  $('checklist-results').innerHTML=html;
+
+  // Cross-check interactions
+  if(r.cross_check_interactions&&r.cross_check_interactions.length){const x=$('cross-checks');x.classList.remove('hidden');x.innerHTML=`<div class="cross-box"><div class="section-label" style="color:var(--amber)">Cross-Check Interactions</div>${r.cross_check_interactions.map(i=>`<p style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px;">${i}</p>`).join('')}</div>`;}
+  else $('cross-checks').classList.add('hidden');
+
+  // Render executive summary with structured formatting
+  const summ=r.executive_summary||'';
+  let summHtml='';
+
+  // Split into: description, failed items, strengths
+  const failedItems=r.items?r.items.filter(i=>i.verdict==='fail'):[];
+  const passedItems=r.items?r.items.filter(i=>i.verdict==='pass'):[];
+  const naItems=r.items?r.items.filter(i=>i.verdict==='not_applicable'):[];
+
+  // Paper description (methodology summary)
+  const desc=(r.classification&&r.classification.methodology_summary)||summ.split('\n\n')[0]||'';
+  if(desc) summHtml+=`<div style="margin-bottom:18px;padding:16px 20px;background:var(--cream);border-radius:8px;border:1px solid var(--rule-light);font-size:0.9rem;color:var(--text);line-height:1.8;text-align:justify;">${desc}</div>`;
+
+  // Failed items as cards
+  if(failedItems.length){
+    summHtml+=`<h4 style="font-size:0.75rem;font-weight:600;color:var(--vermillion);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Issues Identified (${failedItems.length})</h4>`;
+    failedItems.forEach(i=>{
+      summHtml+=`<div style="padding:14px 16px;background:var(--vermillion-bg);border-left:3px solid var(--vermillion);border-radius:0 8px 8px 0;margin-bottom:8px;">
+        <div style="font-size:0.88rem;color:var(--ink);font-weight:600;margin-bottom:4px;">${i.item_id} ${i.item_name}</div>
+        <div style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">${i.description.slice(0,250)}${i.description.length>250?'...':''}</div>
+        ${i.recommendations&&i.recommendations.length?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--vermillion-light);">
+          ${i.recommendations.slice(0,2).map(r=>`<div style="font-size:0.8rem;color:var(--vermillion);margin-top:4px;">&#8594; ${r}</div>`).join('')}
+        </div>`:''}
+      </div>`;
+    });
+  }
+
+  // Strengths
+  if(passedItems.length){
+    summHtml+=`<h4 style="font-size:0.75rem;font-weight:600;color:var(--sage);text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 10px;">Strengths (${passedItems.length})</h4>
+    <div style="padding:12px 16px;background:var(--sage-bg);border-left:3px solid var(--sage);border-radius:0 8px 8px 0;">
+      ${passedItems.map(i=>`<div style="font-size:0.85rem;color:var(--sage);padding:3px 0;">&#10003; ${i.item_name}</div>`).join('')}
+    </div>`;
+  }
+
+  // N/A items (compact)
+  if(naItems.length){
+    summHtml+=`<div style="margin-top:12px;font-size:0.78rem;color:var(--text-tertiary);">Not applicable to this paper: ${naItems.map(i=>i.item_name).join(', ')}.</div>`;
+  }
+
+  $('executive-summary').innerHTML=summHtml;
+}
+
+// -- Export --
+$('export-pdf').addEventListener('click',()=>{
+  if(!reportData)return;
+  document.querySelectorAll('details.check-item').forEach(d=>d.open=true);
+  window.print();
+});
+$('export-json').addEventListener('click',()=>{if(reportData)dl(JSON.stringify(reportData,null,2),'bias-report.json','application/json');});
+$('export-text').addEventListener('click',()=>{if(reportData)dl(txtReport(reportData),'bias-report.txt','text/plain');});
+
+function txtReport(r){
+  let t='='.repeat(72)+'\nSTRUCTURAL VALIDITY CHECKLIST REPORT\n'+'='.repeat(72)+'\n';
+  t+=`Paper: ${r.paper_title}\nType: ${r.classification.paper_type}\nVerdict: ${r.overall_verdict.toUpperCase()}\nScore: ${Math.round((r.checklist_score||0)*100)}%\n\n${r.executive_summary}\n\n`;
+  (r.items||[]).forEach(i=>{
+    t+=`[${i.verdict.toUpperCase().padEnd(15)}] ${i.item_id} ${i.item_name}\n`;
+    t+=`  Q: ${i.question}\n`;
+    t+=`  ${i.description}\n`;
+    if(i.recommendations.length){t+='  Recommendations:\n';i.recommendations.forEach(r=>{t+=`    - ${r}\n`;});}
+    t+='\n';
+  });
+  return t;
+}
+function dl(c,n,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();URL.revokeObjectURL(a.href);}
+
+// -- Nav --
+$('back-btn').addEventListener('click',bk);$('error-back-btn').addEventListener('click',bk);
+function bk(){hide('report-section');hide('progress-section');hide('error-section');show('upload-section');renderHistory();}
+function show(id){$(id).classList.remove('hidden');}
+function hide(id){$(id).classList.add('hidden');}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// -- Section animation --
+function animateSections(){
+  $('progress-status').textContent='Evaluating all 12 checklist items...';
+}
+function finishSections(){
+  ['sec1','sec2','sec3','sec4','sec5'].forEach(s=>mark(s,'done'));
+  $('progress-status').textContent='Complete!';$('progress-status').style.color='var(--sage)';
+}
+
+</script>
+</body>
+</html>
